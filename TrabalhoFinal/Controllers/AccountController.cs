@@ -319,7 +319,7 @@ namespace TrabalhoFinal.Controllers
         }
 
         // POST api/Account/Register
-        [AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
         [Route("Register")]
         public async Task<IHttpActionResult> Register(RegisterBindingModel model)
         {
@@ -336,8 +336,13 @@ namespace TrabalhoFinal.Controllers
             {
                 return GetErrorResult(result);
             }
-
-            return Ok();
+            else
+            {
+                var addToRoleResult = await UserManager.AddToRoleAsync(user.Id, "USER");
+                if (!addToRoleResult.Succeeded){
+					return	GetErrorResult(result);
+                }
+			}            return Ok();
         }
 
         // POST api/Account/RegisterExternal
