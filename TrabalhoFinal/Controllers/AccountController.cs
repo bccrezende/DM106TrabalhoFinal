@@ -342,7 +342,8 @@ namespace TrabalhoFinal.Controllers
                 if (!addToRoleResult.Succeeded){
 					return	GetErrorResult(result);
                 }
-			}            return Ok();
+			}
+            return Ok();
         }
 
         // POST api/Account/RegisterExternal

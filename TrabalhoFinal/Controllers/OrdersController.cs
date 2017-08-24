@@ -16,20 +16,23 @@ namespace TrabalhoFinal.Controllers
     {
         private TrabalhoFinalContext db = new TrabalhoFinalContext();
 
+
         // GET: api/Orders
+        [Authorize(Roles = "ADMIN")]
         public IQueryable<Order> GetOrders()
         {
             return db.Orders;
         }
 
         // GET: api/Orders/5
+        [Authorize(Roles = "ADMIN")]
         [ResponseType(typeof(Order))]
         public IHttpActionResult GetOrder(int id)
         {
             Order order = db.Orders.Find(id);
             if (order == null)
             {
-                return NotFound();
+                return BadRequest("Sorry, não temos esse pedido cadastrado");
             }
 
             return Ok(order);
