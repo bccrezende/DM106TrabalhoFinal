@@ -9,13 +9,28 @@ using System.Net.Http;
 using System.Web.Http;
 using System.Web.Http.Description;
 using TrabalhoFinal.Models;
+using System.Security.Principal;
 
 namespace TrabalhoFinal.Controllers
 {
+    [Authorize]
+    [RoutePrefix("api/orders")]
     public class OrdersController : ApiController
     {
         private TrabalhoFinalContext db = new TrabalhoFinalContext();
 
+        [ResponseType(typeof(Product))]
+        [HttpGet]
+        [Route("byemail")]
+        public IHttpActionResult GetOrderByEmail(string email)
+        {
+            var order = db.Orders.Where(p => p.userName == email);
+            if (order == null)
+            {
+                return BadRequest("Sorry, não temos esse pedido cadastrado.");
+            }
+            return Ok(order);
+        }
 
         // GET: api/Orders
         [Authorize(Roles = "ADMIN")]
@@ -25,20 +40,26 @@ namespace TrabalhoFinal.Controllers
         }
 
         // GET: api/Orders/5
-        [Authorize(Roles = "ADMIN")]
         [ResponseType(typeof(Order))]
         public IHttpActionResult GetOrder(int id)
         {
             Order order = db.Orders.Find(id);
-            if (order == null)
+            if (checkUserFromOrder(User, order)) {
+                if (order == null)
+                {
+                    return BadRequest("Sorry, não temos esse pedido cadastrado.");
+                }
+                return Ok(order);
+            }
+            else
             {
-                return BadRequest("Sorry, não temos esse pedido cadastrado");
+                return BadRequest("Sorry, você não é ADMIN e nem esse pedido é seu!");
             }
 
-            return Ok(order);
         }
 
         // PUT: api/Orders/5
+        [Authorize]
         [ResponseType(typeof(void))]
         public IHttpActionResult PutOrder(int id, Order order)
         {
@@ -117,5 +138,11 @@ namespace TrabalhoFinal.Controllers
         {
             return db.Orders.Count(e => e.Id == id) > 0;
         }
+
+        private bool checkUserFromOrder(IPrincipal user, Order order)
+        {
+            return ((user.Identity.Name.Equals(order.userName)) || (user.IsInRole("ADMIN")));
+        }
+
     }
 }
