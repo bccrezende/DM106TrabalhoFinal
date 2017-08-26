@@ -31,6 +31,43 @@ namespace TrabalhoFinal.Controllers
             }
             return Ok(order);
         }
+        // POST: api/Orders
+        [ResponseType(typeof(Order))]
+        [HttpPost]
+        [Route("closeOrder")]
+        public IHttpActionResult CloseOrder(int id)
+        {
+            Order order = db.Orders.Find(id);
+            if (checkUserFromOrder(User, order))
+            {
+                if (order == null)
+                {
+                    return BadRequest("Sorry, não temos esse pedido cadastrado.");
+                }
+                else
+                {
+                    if (order.status != "fechado")
+                    {
+                        if (order.precoFrete == 0)
+                        {
+                            return BadRequest("Sorry, preço do frete ainda não foi calculado.");
+                        }
+                        else
+                        {
+                            order.status = "fechado";
+                            db.SaveChanges();
+                            return BadRequest("Seu pedido foi fechado com sucesso.");
+                        }
+                    }
+                    return BadRequest("Sorry, pedido foi fechado anteriormente.");
+                }
+            }
+            else
+            {
+                return BadRequest("Sorry, você não é ADMIN e nem esse pedido é seu!");
+            }
+        }
+
 
         // GET: api/Orders
         [Authorize(Roles = "ADMIN")]
@@ -98,6 +135,13 @@ namespace TrabalhoFinal.Controllers
         [ResponseType(typeof(Order))]
         public IHttpActionResult PostOrder(Order order)
         {
+            order.status = "novo";
+            order.userName = User.Identity.Name;
+            order.pesoTotal = 0;
+            order.precoTotal = 0;
+            order.precoFrete = 0;
+            order.data = DateTime.Now;
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -106,7 +150,7 @@ namespace TrabalhoFinal.Controllers
             db.Orders.Add(order);
             db.SaveChanges();
 
-            return CreatedAtRoute("DefaultApi", new { id = order.Id }, order);
+            return CreatedAtRoute("DefaultApi", new { id = order.Id}, order);
         }
 
         // DELETE: api/Orders/5
@@ -114,15 +158,21 @@ namespace TrabalhoFinal.Controllers
         public IHttpActionResult DeleteOrder(int id)
         {
             Order order = db.Orders.Find(id);
-            if (order == null)
+            if (checkUserFromOrder(User, order))
             {
-                return NotFound();
+                if (order == null)
+                {
+                    return BadRequest("Sorry, não temos esse pedido cadastrado.");
+                }
+                db.Orders.Remove(order);
+                db.SaveChanges();
+
+                return Ok(order);
             }
-
-            db.Orders.Remove(order);
-            db.SaveChanges();
-
-            return Ok(order);
+            else
+            {
+                return BadRequest("Sorry, você não é ADMIN e nem esse pedido é seu!");
+            }          
         }
 
         protected override void Dispose(bool disposing)
